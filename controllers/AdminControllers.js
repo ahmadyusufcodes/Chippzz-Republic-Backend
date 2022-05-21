@@ -79,7 +79,6 @@ module.exports.create_product = async(req, res) => {
     const {name, category, price, stock} = req.body
     const checkExist = await Product.findOne({name, category})
     if(checkExist) return res.status(409).json({error: "A product exists with same name and category"})
-    if(!await Category.findOne({name: category})) return res.status(404).json({error: "Category not found"})
     if(!name || !category || !price) return res.status(400).json({error: "Please include necessary info"})
     try {
         const newProduct = new Product({name, price, category, stock})
