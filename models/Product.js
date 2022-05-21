@@ -18,16 +18,9 @@ const ProductSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    restockLevel: {
-        type: Number,
-        default: 4
-    },
     price: {
         type: Number,
         required: [true, "Price must be included"]
-    },
-    imageUrl: {
-        type: String
     }
 })
 

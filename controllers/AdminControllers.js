@@ -6,6 +6,7 @@ const Product = require("../models/Product")
 const Order = require("../models/Order")
 const { get } = require("express/lib/response")
 const {groupBy, mapValues, omit} = require("lodash")
+const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
@@ -27,7 +28,7 @@ module.exports.register = async (req, res) => {
 
 module.exports.create_staff = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
-    const {username, phone, firstName, lastName, password} = req.body
+    const {username, firstName, lastName, password} = req.body
     const userExists = await User.findOne({username})
     if(userExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
     // const passwordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{6,})")
@@ -36,8 +37,7 @@ module.exports.create_staff = async (req, res) => {
         username,
         password,
         firstName,
-        lastName,
-        phone
+        lastName
     })
     const doneCreate = await newUser.save()
     return res.json(doneCreate)
@@ -91,6 +91,34 @@ module.exports.create_product = async(req, res) => {
     }
 }
 
+module.exports.delete_product = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {_id} = req.body
+    try {
+        const checkExist = await Product.findOneAndDelete({_id})
+        if(!checkExist) return res.status(409).json({error: "Product Not Found"})
+        return res.json(checkExist)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.manage_profile = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {name, receiptText, address, phoneNumber1, phoneNumber2} = req.body
+    try {
+        const checkExist = await Profile.findOneAndUpdate({}, {name, receiptText, address, phoneNumber1, phoneNumber2})
+        if(!checkExist){
+            const newProfile = new Profile({name, receiptText, address, phoneNumber1, phoneNumber2})
+            const savedProfile = await newProfile.save()
+            return res.json(savedProfile)
+        }
+        return res.json(checkExist)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
 module.exports.get_product_by_category = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
     const {name} = req.body
@@ -100,6 +128,15 @@ module.exports.get_product_by_category = async(req, res) => {
         const newCategory = new Category({name})
         const savedCategory = await newCategory.save()
         return res.json(savedCategory)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.get_profile = async(req, res) => {
+    try {
+        const checkProfile = await Profile.findOne()
+        return res.json(checkProfile)
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
@@ -222,6 +259,45 @@ module.exports.edit_order = async(req, res) => {
         const modOrder = await Order.findOneAndUpdate({_id}, {customer, items, total, paid})
         const savedOrder = await modOrder.save()
         return res.status(201).json(savedOrder)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.edit_staff = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {_id, username, firstName, lastName, password} = req.body
+    if(!_id || !items || !customer || !total || !paid) return res.status(400).json({error: "Please include necessary info"})
+    try {
+        const modStaff = await User.findOneAndUpdate({_id}, {username, firstName, lastName, password})
+        const savedStaff = await modStaff.save()
+        return res.status(201).json(savedStaff)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.fund_stock = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {_id, amount} = req.body
+    if(!_id || !amount) return res.status(400).json({error: "Please include necessary info"})
+    try {
+        const modProduct = await Product.findOneAndUpdate({_id}, {$inc: {stock: amount}})
+        const savedProduct = await modProduct.save()
+        return res.status(201).json(savedProduct)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.edit_product = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {_id, name, price, category} = req.body
+    if(!_id || !name || !price || !category) return res.status(400).json({error: "Please include necessary info"})
+    try {
+        const modProduct = await Product.findOneAndUpdate({_id}, {name, price, category})
+        const savedProduct = await modProduct.save()
+        return res.status(201).json(savedProduct)
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
