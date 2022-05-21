@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "start": "node App.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -20,5 +21,8 @@
     "nodemailer": "^6.7.5",
     "paystack": "^2.0.1",
     "validator": "^13.7.0"
+  },
+  "engines":{
+    "node": "16.15.0"
   }
 }
