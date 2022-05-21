@@ -10,7 +10,7 @@ const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
-    const {username, email, firstName, lastName, password} = req.body
+    const {username, firstName, lastName, password} = req.body
     const userExists = await Admin.findOne({$or: [{username}, {email}]})
     if(userExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
     const passwordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})")
@@ -20,7 +20,6 @@ module.exports.register = async (req, res) => {
         password,
         firstName,
         lastName,
-        email
     })
     const doneCreate = await newUser.save()
     return res.json(doneCreate)
