@@ -22,17 +22,18 @@ app.use("/api/staff", UserRoutes)
 
 console.log("starting.....")
 try {
-    // mongoose.connect(process.env.DB_URI + process.env.DB_COLLECTION, {
-    //     useNewUrlParser: true,
-    //     useUnifiedTopology: true,
-    //   }, () => {
+    mongoose.connect(process.env.DB_URI + process.env.DB_COLLECTION, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }, () => {
         app.get('/healthz', (req, res) => {
             res.send('Server running okey!')
         })
         app.listen(PORT, () => {
             console.log(`Server running on ${PORT}🔥`)
         })
-    
+      })
 } catch (error) {
     throw error
 }
+
