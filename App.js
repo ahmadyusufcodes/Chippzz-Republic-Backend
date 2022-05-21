@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 5000
 app.use("/api/admin", AdminRoutes)
 app.use("/api/staff", UserRoutes)
 
+console.log("starting.....")
 try {
     mongoose.connect(process.env.DB_URI + process.env.DB_COLLECTION, {
         useNewUrlParser: true,
