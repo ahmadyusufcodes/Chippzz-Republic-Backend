@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt")
 const AdminSchema = new mongoose.Schema({
     username: {
         type: String,
-        required: [true, "Username must be included"]
+        required: true,
     },
     firstName: {
         type: String,
@@ -14,13 +14,9 @@ const AdminSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    email: {
-        type: String,
-        required: [true, "Email must be included"]
-    },
     password: {
         type: String,
-        required: [true, "Please include password"]
+        required: true
     },
     role: {
         type: String,
