@@ -11,7 +11,7 @@ const Profile = require("../models/Profile")
 module.exports.register = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
     const {username, firstName, lastName, password} = req.body
-    const userExists = await Admin.findOne({$or: [{username}, {email}]})
+    const userExists = await Admin.findOne({username})
     if(userExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
     const passwordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})")
     if(!password.match(passwordRegex)) return res.json({msg: "Password must be at least 8 char. include at least one uppercase, lowercase and a special char."})
