@@ -23,15 +23,18 @@ app.use("/api/staff", UserRoutes)
 console.log("starting.....")
 try {
     mongoose.connect(process.env.DB_URI ,{
-        useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true 
-      }, () => {
-        app.get('/healthz', (req, res) => {
-            res.send('Server running okey!')
-        })
-        app.listen(PORT, () => {
-            console.log(`Server running on ${PORT}🔥`)
-        })
+        useNewUrlParser: true, useUnifiedTopology: true 
       })
+    const connection = mongoose.connection;
+    connection.once('open', () => {
+        console.log("MongoDB database connection established successfully");
+    });
+    app.get('/healthz', (req, res) => {
+            res.send('Server running okey!')
+    })
+    app.listen(PORT, () => {
+        console.log(`Server running on ${PORT}🔥`)
+    })
 } catch (error) {
     throw error
 }
