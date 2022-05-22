@@ -192,6 +192,84 @@ module.exports.get_all_orders = async(req, res) => {
     }
 }
 
+module.exports.get_summary_today = async(req, res) => {
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    today.toISOString()
+    yesterday.toISOString()
+
+    try {
+        const getOrders = await Order.find({createdAt: {$lt: today.toISOString(), $gte: yesterday.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gte: yesterday.toISOString(), $lt: today.toISOString(), }})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        //    const containAll = [..., ...getOrders]
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+            reservations: {
+            sales: reservationsFinal,
+            total: (reservationsFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }, 
+        orders: {
+            sales: ordersFinal,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
+}
+
 module.exports.get_specified = async(req, res) => {
     const {toDate, fromDate} = req.body
     // Get for spec date

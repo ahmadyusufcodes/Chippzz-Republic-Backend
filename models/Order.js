@@ -22,6 +22,9 @@ const OrderSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    reservationFulfilledOn: {
+        type: Date
+    },
     isReserved: {
         type: Boolean,
         default: false
@@ -59,6 +62,7 @@ OrderSchema.pre('save', function(next) {
         order.items.forEach(async(item) => {
             return await Product.findOneAndUpdate({_id: item.item._id}, {$inc: {stock: - item.qty}})
         })
+         this.reservationFulfilledOn = new Date().toISOString()
         console.log("Fulfill")
         return next()
     }
