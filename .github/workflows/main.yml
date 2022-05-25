@@ -12,6 +12,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
         with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "YOUR APP's NAME" #Must be unique in Heroku
-          heroku_email: "YOUR EMAIL"
+          heroku_api_key: "cbb3c944-578a-49f9-b263-7a41a1c7c0bb"
+          heroku_app_name: "chipz-republic-backend" #Must be unique in Heroku
+          heroku_email: "kalycodes@gmail.com"
