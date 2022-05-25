@@ -193,18 +193,18 @@ module.exports.get_all_orders = async(req, res) => {
 }
 
 module.exports.get_summary_today = async(req, res) => {
-    const today = new Date().toLocaleString('en-US', {
+    const D = new Date().toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
         
-    const yesterday = new Date(today)
-    const tomorrow = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    tomorrow.setDate(yesterday.getDate() + 1)
+    const today = new Date(D)
+    today.setHours(1)
+    today.setMinutes(0)
+    today.setSeconds(0)
     
     try {
-        const getOrders = await Order.find({createdAt: {$lt: tomorrow.toISOString(), $gt: yesterday.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
-        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: yesterday.toISOString(), $lt: tomorrow.toISOString(), }})
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
         const getAllOrders = getOrders.map(order => {
             return order.items.map(item => {
                 return {
