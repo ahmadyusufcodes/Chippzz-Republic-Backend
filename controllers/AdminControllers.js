@@ -28,17 +28,17 @@ module.exports.register = async (req, res) => {
 module.exports.create_staff = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
     const {username, firstName, lastName, password, role} = req.body
-    if(role === "staff") {
+    if(role === "Staff") {
         const staffExists = await User.findOne({username})
         if(staffExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
     }
-    if(role === "admin") {
+    if(role === "Admin") {
         const adminExists = await Admin.findOne({username})
         if(adminExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
     }
 
     if(!password.length > 6) return res.json({msg: "Password must be at least 8 char. include at least one uppercase, lowercase and a special char."})
-    if(role === "staff"){
+    if(role === "Staff"){
         const newUser = new User({
             username,
             password,
@@ -48,7 +48,7 @@ module.exports.create_staff = async (req, res) => {
         const doneCreate = await newUser.save()
         return res.json(doneCreate)
     }
-    if(role === "admin"){
+    if(role === "Admin"){
         const newUser = new Admin({
             username,
             password,
@@ -179,8 +179,9 @@ module.exports.get_all_products = async(req, res) => {
 
 module.exports.get_all_staff = async(req, res) => {
     try {
-        const allProduct = await User.find()
-        return res.json({staffs: allProduct})
+        const allStaff = await User.find()
+        const allAdmin = await Admin.find()
+        return res.json({staffs: allStaff, admins: allAdmin})
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
