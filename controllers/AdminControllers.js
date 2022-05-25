@@ -27,19 +27,37 @@ module.exports.register = async (req, res) => {
 
 module.exports.create_staff = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
-    const {username, firstName, lastName, password} = req.body
-    const userExists = await User.findOne({username})
-    if(userExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
-    // const passwordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{6,})")
+    const {username, firstName, lastName, password, role} = req.body
+    if(role === "staff") {
+        const staffExists = await User.findOne({username})
+        if(staffExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
+    }
+    if(role === "admin") {
+        const adminExists = await Admin.findOne({username})
+        if(adminExists) return res.status(409).json({msg: "User already exists with same Email or Username"})
+    }
+
     if(!password.length > 6) return res.json({msg: "Password must be at least 8 char. include at least one uppercase, lowercase and a special char."})
-    const newUser = new User({
-        username,
-        password,
-        firstName,
-        lastName
-    })
-    const doneCreate = await newUser.save()
-    return res.json(doneCreate)
+    if(role === "staff"){
+        const newUser = new User({
+            username,
+            password,
+            firstName,
+            lastName
+        })
+        const doneCreate = await newUser.save()
+        return res.json(doneCreate)
+    }
+    if(role === "admin"){
+        const newUser = new Admin({
+            username,
+            password,
+            firstName,
+            lastName
+        })
+        const doneCreate = await newUser.save()
+        return res.json(doneCreate)
+    }
 },
 
 module.exports.login = async (req, res) => {
@@ -54,10 +72,6 @@ module.exports.login = async (req, res) => {
       }, process.env.JWT_SECRET, { expiresIn: 600000 });
     //   console.log(token)
       return res.json({...adminExists._doc, token})
-}
-
-module.exports.test = async(req, res) => {
-    res.json('search_product')
 }
 
 module.exports.create_category = async(req, res) => {
@@ -185,7 +199,7 @@ module.exports.search_products = async(req, res) => {
 module.exports.get_all_orders = async(req, res) => {
     const {nextPage} = req.body
     try {
-        const allProduct = await Order.find().limit(10).skip(10 * nextPage)
+        const allProduct = await Order.find({$or: [{orderType: "Shipment"}, {orderType: "Instant-Order"}]}).sort("-receiptNo").limit(10).skip(10 * nextPage)
         return res.json({orders: allProduct, nextPage: nextPage || 1})
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
@@ -193,6 +207,87 @@ module.exports.get_all_orders = async(req, res) => {
 }
 
 module.exports.get_summary_today = async(req, res) => {
+    const D = new Date().toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+        
+    const today = new Date(D)
+    today.setHours(1)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    
+    try {
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        //    const containAll = [..., ...getOrders]
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+            reservations: {
+            sales: reservationsFinal,
+            total: (reservationsFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }, 
+        orders: {
+            sales: ordersFinal,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
+}
+
+module.exports.get_summary_date_to_date = async(req, res) => {
     const D = new Date().toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
