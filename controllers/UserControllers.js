@@ -116,12 +116,16 @@ module.exports.get_all_reservations = async(req, res) => {
 module.exports.create_order = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
     // console.log(req.body)
+    const D = new Date().toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+    const today = new Date(D)
     const {customer, items, orderType, createdBy, shipmentFee, reservationDate, isReserved} = req.body
     if(!items || !orderType || !createdBy) return res.status(400).json({error: "Please include necessary info"})
     const getCount = await Order.countDocuments()
     const customerId = await customer  || ("Customer#" + (getCount + 1))
     try {
-        const newOrder = new Order({customer: customerId, items, shipmentFee, orderType, isReserved, reservationDate, createdBy, receiptNo: getCount + 1})
+        const newOrder = new Order({customer: customerId, createdAt: today.toISOString(), items, shipmentFee, orderType, isReserved, reservationDate, createdBy, receiptNo: getCount + 1})
         const savedOrder = await newOrder.save()
         return res.json(savedOrder)
     } catch (error) {

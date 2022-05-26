@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("./User");
-
+    
 const OrderSchema = new mongoose.Schema({
     items: {
         type: Array({item: Object, qty: {type: Number}}),
