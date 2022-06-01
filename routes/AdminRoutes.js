@@ -30,5 +30,7 @@ router.post("/staff/edit", authenticateJWT, AdminControllers.edit_staff)
 router.get("/staff", authenticateJWT, AdminControllers.get_all_staff)
 
 router.get("/summary/today", authenticateJWT, AdminControllers.get_summary_today)
+router.get("/report/today", authenticateJWT, AdminControllers.get_report_today)
+router.post("/summary/bydate", authenticateJWT, AdminControllers.get_summary_date_to_date)
 
 module.exports = router

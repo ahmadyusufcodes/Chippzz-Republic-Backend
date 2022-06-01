@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken")
 const Product = require("../models/Product")
 const Order = require("../models/Order")
 const { get } = require("express/lib/response")
-const {groupBy, mapValues, omit} = require("lodash")
+const {groupBy, mapValues, omit, isDate} = require("lodash")
 const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
@@ -207,13 +207,90 @@ module.exports.get_all_orders = async(req, res) => {
     }
 }
 
-module.exports.get_summary_today = async(req, res) => {
+module.exports.get_report_today = async(req, res) => {
     const D = new Date().toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
         
     const today = new Date(D)
     today.setHours(1)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    
+    try {
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        //    const containAll = [..., ...getOrders]
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+        orders: {
+            sales: getOrders,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
+}
+
+module.exports.get_summary_today = async(req, res) => {
+    const D = new Date().toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+        
+    const today = new Date(D)
+    today.setHours(0)
     today.setMinutes(0)
     today.setSeconds(0)
     
@@ -289,18 +366,32 @@ module.exports.get_summary_today = async(req, res) => {
 }
 
 module.exports.get_summary_date_to_date = async(req, res) => {
-    const D = new Date().toLocaleString('en-US', {
+    const {startDate, endDate} = req.body    
+    const fromDate = new Date(startDate).toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
         
-    const today = new Date(D)
-    today.setHours(1)
-    today.setMinutes(0)
-    today.setSeconds(0)
+    const toDate = new Date(endDate).toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+
+    const start = new Date(fromDate)
+    const end = new Date(toDate)
+
+    start.setHours(0)
+    start.setMinutes(0)
+    start.setSeconds(0)
+    end.setHours(0)
+    end.setMinutes(0)
+    end.setSeconds(0)
+
+    start.setDate(start.getDate() - 1)
+    end.setDate(end.getDate() + 1)
+    
     
     try {
-        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
-        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
         const getAllOrders = getOrders.map(order => {
             return order.items.map(item => {
                 return {
