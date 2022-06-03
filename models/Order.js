@@ -47,7 +47,6 @@ const OrderSchema = new mongoose.Schema({
         default: false
     }
 })
-
 OrderSchema.pre('save', function(next) {
     const Product = require("./Product")
     const order = this;
