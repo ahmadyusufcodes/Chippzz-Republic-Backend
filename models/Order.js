@@ -53,21 +53,24 @@ OrderSchema.pre('save', function(next) {
     const order = this;
 
     if(order.isNew && order.isReserved){
-            console.log("Reserved")
         return next()
     }
-
+    
     if(!order.isNew && order.isReserved && !order.$isDefault("reservationFulfilled")){
         order.items.forEach(async(item) => {
             return await Product.findOneAndUpdate({_id: item.item._id}, {$inc: {stock: - item.qty}})
         })
-         this.reservationFulfilledOn = new Date().toISOString()
-        console.log("Fulfill")
+        this.reservationFulfilledOn = new Date().toISOString()
         return next()
     }
     
+    if(order.orderType === "Reservation" && !order.$isDefault('revoked')){
+        console.log("Revoke Reservation")
+        return next()
+    }
+    
+
     if(!order.$isDefault('revoked')){
-        console.log("Revoke")
         order.items.forEach(async(item) => {
             return await Product.findOneAndUpdate({_id: item.item._id}, {$inc: {stock: item.qty}})
         })

@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken")
 const Product = require("../models/Product")
 const Order = require("../models/Order")
 const { get } = require("express/lib/response")
-const {groupBy, mapValues, omit, isDate} = require("lodash")
 const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
@@ -110,6 +109,25 @@ module.exports.delete_product = async(req, res) => {
         const checkExist = await Product.findOneAndDelete({_id})
         if(!checkExist) return res.status(409).json({error: "Product Not Found"})
         return res.json(checkExist)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+module.exports.delete_staff = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {_id, role} = req.body
+    try {
+        if(role === "Staff") {
+            const checkExist = await User.findOneAndDelete({_id})
+            if(!checkExist) return res.status(409).json({error: "User Not Found"})
+            return res.json(checkExist)
+        }
+        if(role === "Admin") {
+            const checkExist = await Admin.findOneAndDelete({_id})
+            if(!checkExist) return res.status(409).json({error: "User Not Found"})
+            return res.json(checkExist)
+        }
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }

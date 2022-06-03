@@ -4,7 +4,6 @@ const Category = require("../models/Category")
 const jwt = require("jsonwebtoken")
 const Product = require("../models/Product")
 const Order = require("../models/Order")
-const {groupBy, mapValues, omit, result} = require("lodash")
 
 module.exports.register = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
