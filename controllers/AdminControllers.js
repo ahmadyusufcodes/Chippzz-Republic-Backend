@@ -345,8 +345,6 @@ module.exports.get_summary_today = async(req, res) => {
             return r;
            }, {})
 
-        //    const containAll = [..., ...getOrders]
-
            let ordersFinal = []
            let reservationsFinal = []
 
@@ -402,12 +400,12 @@ module.exports.get_summary_date_to_date = async(req, res) => {
 
     end.setHours(23)
     end.setMinutes(59)
-    end.setSeconds(0)
+    end.setSeconds(59)
 
     
     try {
-        const getOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
-        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
+        const getOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}, revoked: false})
         const getAllOrders = getOrders.map(order => {
             return order.items.map(item => {
                 return {
