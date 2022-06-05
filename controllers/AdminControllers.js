@@ -236,8 +236,8 @@ module.exports.get_report_today = async(req, res) => {
     today.setSeconds(0)
     
     try {
-        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
-        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}, revoked: false})
         const getAllOrders = getOrders.map(order => {
             return order.items.map(item => {
                 return {
@@ -313,8 +313,8 @@ module.exports.get_summary_today = async(req, res) => {
     today.setSeconds(0)
     
     try {
-        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
-        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()},  revoked: false})
         const getAllOrders = getOrders.map(order => {
             return order.items.map(item => {
                 return {
