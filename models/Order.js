@@ -1,4 +1,8 @@
 const mongoose = require("mongoose");
+
+const D = new Date().toLocaleString('en-US', {
+    timeZone: 'Africa/Lagos'
+    })
     
 const OrderSchema = new mongoose.Schema({
     items: {
@@ -33,7 +37,7 @@ const OrderSchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now()
+        default: D
     },
     createdBy: {
         type: String,
