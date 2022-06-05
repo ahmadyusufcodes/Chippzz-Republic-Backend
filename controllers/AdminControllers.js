@@ -396,6 +396,14 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const start = new Date(fromDate)
     const end = new Date(toDate)
 
+    start.setHours(0)
+    start.setMinutes(0)
+    start.setSeconds(0)
+
+    end.setHours(0)
+    end.setMinutes(0)
+    end.setSeconds(0)
+
     
     try {
         const getOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}]})
