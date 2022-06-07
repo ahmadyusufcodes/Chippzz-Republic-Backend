@@ -68,10 +68,8 @@ OrderSchema.pre('save', function(next) {
     }
     
     if(order.orderType === "Reservation" && !order.$isDefault('revoked')){
-        console.log("Revoke Reservation")
         return next()
     }
-    
 
     if(!order.$isDefault('revoked')){
         order.items.forEach(async(item) => {
