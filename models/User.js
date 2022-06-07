@@ -49,6 +49,20 @@ UserSchema.pre('save',  function(next) {
     });
 });
 
+
+UserSchema.methods.hashPassword = (password) => {
+    bcrypt.genSalt(10, function(err, salt) {
+        if (err) return err;
+        bcrypt.hash(password, salt, (err, hash) => {
+            if (err) return next(err);
+            // password = hash;
+            console.log(hash)
+            return hash
+        });
+    });
+}
+
+
 UserSchema.methods.comparePassword = function(password) {
     return bcrypt.compareSync(password, this.password);
 };

@@ -2,7 +2,7 @@ const AdminControllers = require("../controllers/AdminControllers")
 const {authenticateJWT} = require("../utils/AdminAuthMiddleware")
 const router = require("express").Router()
 
-router.post("/register", AdminControllers.register)
+// router.post("/register", AdminControllers.register)
 router.post("/login", AdminControllers.login)
 router.post("/category/create", authenticateJWT, AdminControllers.create_category)
 router.post("/product/create", authenticateJWT, AdminControllers.create_product)

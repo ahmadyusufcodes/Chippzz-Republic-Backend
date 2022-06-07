@@ -547,9 +547,11 @@ module.exports.edit_order = async(req, res) => {
 module.exports.edit_staff = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
     const {_id, username, firstName, lastName, password} = req.body
-    if(!_id || !items || !customer || !total || !paid) return res.status(400).json({error: "Please include necessary info"})
+    if(!_id || !username || !firstName || !lastName) return res.status(400).json({error: "Please include necessary info"})
     try {
-        const modStaff = await User.findOneAndUpdate({_id}, {username, firstName, lastName, password})
+        await User.findOneAndUpdate({_id}, {username, firstName, lastName})
+        const modStaff = await User.findOne({_id})
+        if(password) modStaff.password = await User.hashPassword(password)
         const savedStaff = await modStaff.save()
         return res.status(201).json(savedStaff)
     } catch (error) {
