@@ -3,8 +3,8 @@ const User = require("../models/User")
 const Category = require("../models/Category")
 const jwt = require("jsonwebtoken")
 const Product = require("../models/Product")
+const Branch = require("../models/Branch")
 const Order = require("../models/Order")
-const { get } = require("express/lib/response")
 const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
@@ -23,6 +23,66 @@ module.exports.register = async (req, res) => {
     const doneCreate = await newUser.save()
     return res.json(doneCreate)
 },
+
+module.exports.create_branch = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {name, address, phone, email, phone1, owner} = req.body
+    const branchExists = await Branch.findOne({name})
+    if(branchExists) return res.status(409).json({msg: "Branch already exists with same name"})
+    try {
+        const newBranch = new Branch({
+            name,
+            address,
+            phone,
+            phone1,
+            owner,
+            email
+        })
+        const doneCreate = await newBranch.save()
+        return res.json(doneCreate)
+    } catch (error) {
+        return res.status(500).json({error: "Internal server error"})
+    }
+}
+
+// create a module to get branch information
+module.exports.get_branch_info = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {name} = req.body
+    const branchExists = await Branch.findOne({name})
+    if(!branchExists) return res.status(409).json({msg: "Branch does not exist"})
+    return res.json(branchExists)
+}
+
+// create a module to query db for all orders
+// use '../models/Order.js' as order model
+// use '../models/Product.js' as product model
+// use '../models/Branch.js' as branch model
+// sort orders by product and branch
+module.exports.get_all_orders = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {name} = req.body
+    const branchExists = await Branch.findOne({name})
+    if(!branchExists) return res.status(409).json({msg: "Branch does not exist"})
+    const allOrders = await Order.find({branch: branchExists._id})
+    const allProducts = await Product.find({branch: branchExists._id})
+    const allBranches = await Branch.find({})
+    const allUsers = await User.find({})
+    const allOrdersWithProducts = allOrders.map(order => {
+        const product = allProducts.find(product => product._id.toString() === order.product.toString())
+        const branch = allBranches.find(branch => branch._id.toString() === order.branch.toString())
+        const user = allUsers.find(user => user._id.toString() === order.user.toString())
+        return {
+            ...order.toJSON(),
+            product,
+            branch,
+            user,
+        }
+    }
+    )
+    return res.json(allOrdersWithProducts)
+}
+
 
 module.exports.create_staff = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
