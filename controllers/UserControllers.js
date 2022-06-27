@@ -160,10 +160,10 @@ module.exports.revoke_order = async(req, res) => {
 
 module.exports.fulfil_reservation = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
-    const {_id} = req.body
-    if(!_id) return res.status(400).json({error: "Please include necessary info"})
+    const {_id, staff} = req.body
+    if(!_id || !staff) return res.status(400).json({error: "Please include necessary info"})
     try {
-        const modOrder = await Order.findOneAndUpdate({_id}, {reservationFulfilled: true})
+        const modOrder = await Order.findOneAndUpdate({_id}, {reservationFulfilled: true, createdBy: staff})
         const savedOrder = await modOrder.save()
         return res.status(201).json(savedOrder)
     } catch (error) {
