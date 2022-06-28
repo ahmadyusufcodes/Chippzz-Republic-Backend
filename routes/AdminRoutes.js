@@ -16,6 +16,7 @@ router.post("/product/stock/fund", authenticateJWT, AdminControllers.fund_stock)
 router.post("/order/create", authenticateJWT, AdminControllers.create_order)
 router.post("/order/edit", authenticateJWT, AdminControllers.edit_order)
 router.post("/order/getall", authenticateJWT, AdminControllers.get_all_orders)
+router.post("/orders/getallorders", authenticateJWT, AdminControllers.get_all_orders)
 router.post("/order/revoke", authenticateJWT, AdminControllers.revoke_order)
 router.post("/order/reservations", authenticateJWT, AdminControllers.get_all_reservations)
 router.post("/order/reservation/fulfil", authenticateJWT, AdminControllers.fulfil_reservation)
@@ -29,9 +30,9 @@ router.post("/staff/create", authenticateJWT, AdminControllers.create_staff)
 router.post("/staff/edit", authenticateJWT, AdminControllers.edit_staff)
 router.post("/staff/delete", authenticateJWT, AdminControllers.delete_staff)
 router.get("/staff", authenticateJWT, AdminControllers.get_all_staff)
+router.post("/branch/create", authenticateJWT, AdminControllers.create_branch)
 
 router.get("/summary/today", authenticateJWT, AdminControllers.get_summary_today)
-router.get("/report/today", authenticateJWT, AdminControllers.get_report_today)
 router.post("/summary/bydate", authenticateJWT, AdminControllers.get_summary_date_to_date)
 
 module.exports = router
