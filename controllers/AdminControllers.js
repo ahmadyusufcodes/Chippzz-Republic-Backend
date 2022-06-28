@@ -255,6 +255,17 @@ module.exports.get_all_orders = async(req, res) => {
     }
 }
 
+const group_by = (items, key) => items.reduce(
+    (result, item) => ({
+      ...result,
+      [item[key]]: [
+        ...(result[item[key]] || []),
+        item,
+      ],
+    }), 
+    {},
+  );
+
 module.exports.get_summary_date_to_date = async(req, res) => {
     const {startDate, endDate} = req.body
 
@@ -365,6 +376,8 @@ module.exports.get_summary_today = async(req, res) => {
             }
         })
     }).flat()
+
+    
 
     const ordersByHost = await Object.keys(group_by(sortOrders, "host")).map(host => {
         return {
