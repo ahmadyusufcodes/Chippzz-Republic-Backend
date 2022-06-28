@@ -3,8 +3,8 @@ const User = require("../models/User")
 const Category = require("../models/Category")
 const jwt = require("jsonwebtoken")
 const Product = require("../models/Product")
-const Branch = require("../models/Branch")
 const Order = require("../models/Order")
+const { get } = require("express/lib/response")
 const Profile = require("../models/Profile")
 
 module.exports.register = async (req, res) => {
@@ -23,36 +23,6 @@ module.exports.register = async (req, res) => {
     const doneCreate = await newUser.save()
     return res.json(doneCreate)
 },
-
-module.exports.create_branch = async(req, res) => {
-    if(!req.body) return res.json({msg: "Please include required info as JSON"})
-    const {name, address, phone, email, phone1, owner} = req.body
-    const branchExists = await Branch.findOne({name})
-    if(branchExists) return res.status(409).json({msg: "Branch already exists with same name"})
-    try {
-        const newBranch = new Branch({
-            name,
-            address,
-            phone,
-            phone1,
-            owner,
-            email
-        })
-        const doneCreate = await newBranch.save()
-        return res.json(doneCreate)
-    } catch (error) {
-        return res.status(500).json({error: "Internal server error"})
-    }
-}
-
-// create a module to get branch information
-module.exports.get_branch_info = async(req, res) => {
-    if(!req.body) return res.json({msg: "Please include required info as JSON"})
-    const {name} = req.body
-    const branchExists = await Branch.findOne({name})
-    if(!branchExists) return res.status(409).json({msg: "Branch does not exist"})
-    return res.json(branchExists)
-}
 
 module.exports.create_staff = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
@@ -255,13 +225,168 @@ module.exports.get_all_orders = async(req, res) => {
     }
 }
 
-module.exports.get_summary_date_to_date = async(req, res) => {
-    const {startDate, endDate} = req.body
+module.exports.get_report_today = async(req, res) => {
+    const D = new Date().toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+        
+    const today = new Date(D)
+    today.setHours(1)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    
+    try {
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}, revoked: false})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
 
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        //    const containAll = [..., ...getOrders]
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+        orders: {
+            sales: getOrders,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
+}
+
+module.exports.get_summary_today = async(req, res) => {
+    const D = new Date().toLocaleString('en-US', {
+        timeZone: 'Africa/Lagos'
+        })
+        
+    const today = new Date(D)
+    today.setHours(0)
+    today.setMinutes(0)
+    today.setSeconds(0)
+    
+    try {
+        const getOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
+                return {
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
+                }
+            })
+        }).flat()
+
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+            reservations: {
+            sales: reservationsFinal,
+            total: (reservationsFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }, 
+        orders: {
+            sales: ordersFinal,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
+}
+
+module.exports.get_summary_date_to_date = async(req, res) => {
+    const {startDate, endDate} = req.body    
     const fromDate = new Date(startDate).toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
-
+        
     const toDate = new Date(endDate).toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
@@ -277,144 +402,81 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     end.setMinutes(59)
     end.setSeconds(59)
 
-    const getAllOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
-    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
-    const allStaff = await User.aggregate([{$project: {_id: 1, username: 1, firstName: 1, lastName: 1}}])
-
-    const sortOrders = getAllOrders.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const ordersByHost = await Object.keys(group_by(sortOrders, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
-    const sortReservations = getAllReservations.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const reservationsByHost = await Object.keys(group_by(sortReservations, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortReservations.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    price: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortReservations.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
     
-    return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
-    // return res.json(group_by(getAllOrders, "host"))
-    // return res.json(group_by(getOrders, "createdBy"))
-}
-
-module.exports.get_summary_today = async(req, res) => {
-    const D = new Date().toLocaleString('en-US', {
-        timeZone: 'Africa/Lagos'
-        })
-
-    const today = new Date(D)
-    today.setHours(0)
-    today.setMinutes(0)
-    today.setSeconds(0)
-
-    const allStaff = await User.aggregate([{$project: {_id: 1, username: 1, firstName: 1, lastName: 1}}])
-    const getAllOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
-    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
-
-    const sortOrders = getAllOrders.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const ordersByHost = await Object.keys(group_by(sortOrders, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
+    try {
+        const getOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
+        const getReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
+        const getAllOrders = getOrders.map(order => {
+            return order.items.map(item => {
                 return {
-                    name: name,
-                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
                 }
-            }
-            )),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
+            })
+        }).flat()
 
-    const sortReservations = getAllReservations.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const reservationsByHost = await Object.keys(group_by(sortReservations, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortReservations.filter(item => item.host === host), "name")).map(name => {
+        const getAllReservations = getReservations.map(order => {
+            return order.items.map(item => {
                 return {
-                    name: name,
-                    price: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+                    ...item.item,
+                    qty: item.qty,
+                    price: item.item.price
                 }
-            }
-            )),
-            totalSale: sortReservations.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
+            })
+        }).flat()
 
-    
-    return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
+        const getItAll = await getAllOrders.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        const getItAllReservations = await getAllReservations.reduce((r, a) => {
+            r[a.name] = [...r[a.name] || [], a];
+            return r;
+           }, {})
+
+        //    const containAll = [..., ...getOrders]
+
+           let ordersFinal = []
+           let reservationsFinal = []
+
+           Object.keys(getItAll).forEach(product => {
+              ordersFinal.push({
+                  name: product,
+                  price: getItAll[product][0].price,
+                  totalSale: getItAll[product][0].price * (getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAll[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+           
+           Object.keys(getItAllReservations).forEach(product => {
+              reservationsFinal.push({
+                  name: product,
+                  price: getItAllReservations[product][0].price,
+                  totalSale: getItAllReservations[product][0].price * (getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)),
+                  qty: getItAllReservations[product].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+              })
+           })
+
+
+        return res.json({
+            reservations: {
+            sales: reservationsFinal,
+            total: (reservationsFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }, 
+        orders: {
+            sales: ordersFinal,
+            total: (ordersFinal.map(item => item.totalSale).reduce((prev, curr) => prev + curr, 0))
+        }})
+    } catch (error) {
+        return res.json({msg: "Server Error"})
+    }
 }
 
 module.exports.get_specified = async(req, res) => {
     const {toDate, fromDate} = req.body
+    // Get for spec date
     try {
         if(!fromDate) return res.status(400).json({"msg": "Request must contain `fromDate` path"})
         if(!toDate && fromDate){
@@ -443,8 +505,8 @@ module.exports.get_specified = async(req, res) => {
 
 module.exports.create_order = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
-    const {customer, items, total} = req.body
-    if(!items || !customer || !total) return res.status(400).json({error: "Please include necessary info"})
+    const {customer, items, total, paid} = req.body
+    if(!items || !customer || !total || !paid) return res.status(400).json({error: "Please include necessary info"})
     try {
         await items.forEach(async(item) => {
             await Product.findOneAndUpdate({_id: item.item._id}, {$inc: {stock: - item.qty}})
