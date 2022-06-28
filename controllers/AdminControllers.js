@@ -337,8 +337,6 @@ module.exports.get_summary_date_to_date = async(req, res) => {
 
     
     return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
-    // return res.json(group_by(getAllOrders, "host"))
-    // return res.json(group_by(getOrders, "createdBy"))
 }
 
 module.exports.get_summary_today = async(req, res) => {
@@ -408,7 +406,6 @@ module.exports.get_summary_today = async(req, res) => {
             totalSale: sortReservations.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
         }
     })
-
     
     return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
 }
