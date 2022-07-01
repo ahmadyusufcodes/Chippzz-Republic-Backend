@@ -35,6 +35,10 @@ const OrderSchema = new mongoose.Schema({
     receiptNo: {
         type: Number,
     },
+    discount: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: D
