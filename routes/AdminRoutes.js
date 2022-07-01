@@ -23,9 +23,6 @@ router.post("/order/reservation/fulfil", authenticateJWT, AdminControllers.fulfi
 router.get("/profile/", authenticateJWT, AdminControllers.get_profile)
 router.post("/profile/", authenticateJWT, AdminControllers.manage_profile)
 
-router.post("/order/getspec", authenticateJWT, AdminControllers.get_specified)
-
-
 router.post("/staff/create", authenticateJWT, AdminControllers.create_staff)
 router.post("/staff/edit", authenticateJWT, AdminControllers.edit_staff)
 router.post("/staff/delete", authenticateJWT, AdminControllers.delete_staff)
@@ -34,5 +31,7 @@ router.post("/branch/create", authenticateJWT, AdminControllers.create_branch)
 
 router.get("/summary/today", authenticateJWT, AdminControllers.get_summary_today)
 router.post("/summary/bydate", authenticateJWT, AdminControllers.get_summary_date_to_date)
+router.post("/discount", authenticateJWT, AdminControllers.create_discount)
+router.get("/discount/all", authenticateJWT, AdminControllers.get_all_discounts)
 
 module.exports = router

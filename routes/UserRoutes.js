@@ -18,4 +18,6 @@ router.post("/order/reservation/fulfil", authenticateJWT, UserControllers.fulfil
 
 router.post("/getstaffname", authenticateJWT, UserControllers.get_staff)
 
+router.get("/discount/all", authenticateJWT, UserControllers.get_all_discounts)
+
 module.exports = router

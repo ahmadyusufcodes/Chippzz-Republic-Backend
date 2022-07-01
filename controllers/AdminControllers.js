@@ -6,6 +6,7 @@ const Product = require("../models/Product")
 const Branch = require("../models/Branch")
 const Order = require("../models/Order")
 const Profile = require("../models/Profile")
+const Discount = require("../models/Discount")
 
 module.exports.register = async (req, res) => {
     if(req.body == {}) return res.json({msg: "Please include required info as JSON"})
@@ -426,29 +427,25 @@ module.exports.get_summary_today = async(req, res) => {
     return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
 }
 
-module.exports.get_specified = async(req, res) => {
-    const {toDate, fromDate} = req.body
+
+
+module.exports.create_discount = async(req, res) => {
+    if(!req.body) return res.json({msg: "Please include required info as JSON"})
+    const {title, percentage} = req.body
+    if(!title || !percentage) return res.status(400).json({error: "Please include necessary info"})
     try {
-        if(!fromDate) return res.status(400).json({"msg": "Request must contain `fromDate` path"})
-        if(!toDate && fromDate){
-            const allProduct = await Order.find({createdAt: {$gte: fromDate, $lt: new Date()}})
-            return res.json(allProduct)
-        }
-        if(toDate && fromDate){
-            const allProduct = await Order.find({createdAt: {$gte: fromDate, $lt: toDate}})
-            return res.json(allProduct)
-        }
+        const newDiscount = new Discount({title, percentage})
+        const savedDiscount = await newDiscount.save()
+        return res.json(savedDiscount)
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
-    // if(toDate && fromDate){
-    //     const allProduct = await Order.find({createdAt:{$gte: toDate, $lt: fromDate}})
-    //     return res.json(allProduct)
-    // }
-    
+}
+
+module.exports.get_all_discounts = async(req, res) => {
     try {
-        // const allProduct = await Order.find()
-        return res.json({orders: "allProduct"})
+        const allDiscounts = await Discount.find({})
+        return res.json(allDiscounts)
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
