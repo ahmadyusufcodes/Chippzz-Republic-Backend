@@ -373,7 +373,8 @@ module.exports.get_summary_today = async(req, res) => {
                 ...item.item,
                 qty: item.qty,
                 price: item.item.price,
-                host: order.createdBy
+                host: order.createdBy,
+                discount: order.discount || 0
             }
         })
     }).flat()
@@ -384,15 +385,17 @@ module.exports.get_summary_today = async(req, res) => {
         return {
             host: host,
             items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
+                // console.log(name.discount)
                 return {
                     name: name,
+                    discount: name.discount,
                     price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
+                    totalSale: (group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => ((item.price * item.qty) * ((100 - item.discount) / 100))).reduce((prev, curr) => prev + curr, 0)),
                     qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
                 }
             }
             )),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
+            totalSale: sortOrders.filter(item => item.host === host).map(item => ((item.price * item.qty) * ((100 - item.discount) / 100))).reduce((prev, curr) => prev + curr, 0)
         }
     })
 
@@ -402,7 +405,8 @@ module.exports.get_summary_today = async(req, res) => {
                 ...item.item,
                 qty: item.qty,
                 price: item.item.price,
-                host: order.createdBy
+                host: order.createdBy,
+                discount: order.discount || 0
             }
         })
     }).flat()
@@ -413,6 +417,7 @@ module.exports.get_summary_today = async(req, res) => {
             items: (Object.keys(group_by(sortReservations.filter(item => item.host === host), "name")).map(name => {
                 return {
                     name: name,
+                    discount: name.discount,
                     price: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
                     totalSale: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
                     qty: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
