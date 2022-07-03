@@ -267,6 +267,35 @@ const group_by = (items, key) => items.reduce(
     {},
   );
 
+const extractData = (ordersObj) => {
+    const sortOrders = ordersObj.map(order => {
+        return order.items.map(item => {
+            return {
+                ...item.item,
+                qty: item.qty,
+                price: item.item.price,
+                host: order.createdBy
+            }
+        })
+    }).flat()
+
+    const ordersByHost = Object.keys(group_by(sortOrders, "host")).map(host => {
+        return {
+            host: host,
+            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
+                return {
+                    name: name,
+                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
+                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
+                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
+                }
+            })),
+            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
+        }
+    })
+    return ordersByHost
+}
+
 module.exports.get_summary_date_to_date = async(req, res) => {
     const {startDate, endDate} = req.body
 
@@ -293,64 +322,7 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
     const allStaff = await User.aggregate([{$project: {_id: 1, username: 1, firstName: 1, lastName: 1}}])
 
-    const sortOrders = getAllOrders.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const ordersByHost = await Object.keys(group_by(sortOrders, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
-    const sortReservations = getAllReservations.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const reservationsByHost = await Object.keys(group_by(sortReservations, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortReservations.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    price: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortReservations.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
-    
-    return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
-    // return res.json(group_by(getAllOrders, "host"))
-    // return res.json(group_by(getOrders, "createdBy"))
+    return res.json({allStaff, orders: extractData(getAllOrders), reservations: extractData(getAllReservations)})
 }
 
 module.exports.get_summary_today = async(req, res) => {
@@ -367,69 +339,7 @@ module.exports.get_summary_today = async(req, res) => {
     const getAllOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
     const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
 
-    const sortOrders = getAllOrders.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy,
-                discount: order.discount || 0
-            }
-        })
-    }).flat()
-
-    
-
-    const ordersByHost = await Object.keys(group_by(sortOrders, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
-                // console.log(name.discount)
-                return {
-                    name: name,
-                    discount: name.discount,
-                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: (group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => ((item.price * item.qty) * ((100 - item.discount) / 100))).reduce((prev, curr) => prev + curr, 0)),
-                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => ((item.price * item.qty) * ((100 - item.discount) / 100))).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
-    const sortReservations = getAllReservations.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy,
-                discount: order.discount || 0
-            }
-        })
-    }).flat()
-
-    const reservationsByHost = await Object.keys(group_by(sortReservations, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortReservations.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    discount: name.discount,
-                    price: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortReservations.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            }
-            )),
-            totalSale: sortReservations.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-
-    
-    return res.json({allStaff, orders: ordersByHost, reservations: reservationsByHost})
+    return res.json({allStaff, orders: extractData(getAllOrders), reservations: extractData(getAllReservations)})
 }
 
 
