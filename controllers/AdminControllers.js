@@ -302,11 +302,9 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const fromDate = new Date(startDate).toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
-
     const toDate = new Date(endDate).toLocaleString('en-US', {
         timeZone: 'Africa/Lagos'
         })
-
     const start = new Date(fromDate)
     const end = new Date(toDate)
 
