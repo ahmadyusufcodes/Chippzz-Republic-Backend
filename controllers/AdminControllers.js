@@ -100,7 +100,6 @@ module.exports.login = async (req, res) => {
     const token = jwt.sign({
         ...adminExists._doc
       }, process.env.JWT_SECRET, { expiresIn: 600000 });
-    //   console.log(token)
       return res.json({...adminExists._doc, token})
 }
 
@@ -357,7 +356,6 @@ module.exports.create_discount = async(req, res) => {
 
 module.exports.delete_discount = async(req, res) => {
     const {_id} = req.body
-    console.log(req.body)
     if(!_id) return res.status(400).json({error: "Please include necessary info"})
     try {
         await Discount.findByIdAndDelete({_id})
