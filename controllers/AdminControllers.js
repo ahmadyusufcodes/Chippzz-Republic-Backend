@@ -348,19 +348,20 @@ module.exports.create_discount = async(req, res) => {
     if(!title || !percentage) return res.status(400).json({error: "Please include necessary info"})
     try {
         const newDiscount = new Discount({title, percentage})
-        const savedDiscount = await newDiscount.save()
-        return res.json(savedDiscount)
+        await newDiscount.save()
+        return res.json(await Discount.find({}))
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }
 }
 
 module.exports.delete_discount = async(req, res) => {
-    const {discountId} = req.body
-    if(!discountId) return res.status(400).json({error: "Please include necessary info"})
+    const {_id} = req.body
+    console.log(req.body)
+    if(!_id) return res.status(400).json({error: "Please include necessary info"})
     try {
-        const deletedDiscount = await Discount.findByIdAndDelete(discountId)
-        return res.json(deletedDiscount)
+        await Discount.findByIdAndDelete({_id})
+        return res.json(await Discount.find({}))
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
     }

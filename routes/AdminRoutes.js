@@ -31,7 +31,10 @@ router.post("/branch/create", authenticateJWT, AdminControllers.create_branch)
 
 router.get("/summary/today", authenticateJWT, AdminControllers.get_summary_today)
 router.post("/summary/bydate", authenticateJWT, AdminControllers.get_summary_date_to_date)
-router.post("/discount", authenticateJWT, AdminControllers.create_discount)
+
 router.get("/discount/all", authenticateJWT, AdminControllers.get_all_discounts)
+router.put("/discount", authenticateJWT, AdminControllers.edit_discount)
+router.post("/discount", authenticateJWT, AdminControllers.create_discount)
+router.post("/discount/delete", authenticateJWT, AdminControllers.delete_discount)
 
 module.exports = router
