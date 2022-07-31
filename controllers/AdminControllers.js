@@ -266,77 +266,117 @@ const group_by = (items, key) => items.reduce(
     {},
   );
 
-const extractData = (ordersObj) => {
-    const sortOrders = ordersObj.map(order => {
-        return order.items.map(item => {
-            return {
-                ...item.item,
-                qty: item.qty,
-                price: item.item.price,
-                host: order.createdBy
-            }
-        })
-    }).flat()
-
-    const ordersByHost = Object.keys(group_by(sortOrders, "host")).map(host => {
-        return {
-            host: host,
-            items: (Object.keys(group_by(sortOrders.filter(item => item.host === host), "name")).map(name => {
-                return {
-                    name: name,
-                    price: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price)[0],
-                    totalSale: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0),
-                    qty: group_by(sortOrders.filter(item => item.host === host), "name")[name].map(item => item.qty).reduce((prev, curr) => prev + curr, 0)
-                }
-            })),
-            totalSale: sortOrders.filter(item => item.host === host).map(item => item.price * item.qty).reduce((prev, curr) => prev + curr, 0)
-        }
-    })
-    return ordersByHost
-}
-
 module.exports.get_summary_date_to_date = async(req, res) => {
     const {startDate, endDate} = req.body
 
-    const fromDate = new Date(startDate).toLocaleString('en-US', {
-        timeZone: 'Africa/Lagos'
-        })
-    const toDate = new Date(endDate).toLocaleString('en-US', {
-        timeZone: 'Africa/Lagos'
-        })
-    const start = new Date(fromDate)
-    const end = new Date(toDate)
+    const fromDate = new Date(startDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
+    const toDate = new Date(endDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
 
-    start.setHours(0)
-    start.setMinutes(0)
-    start.setSeconds(0)
+    const fromDateISO = new Date(fromDate).toISOString()
+    const toDateISO = new Date(toDate).toISOString()
 
-    end.setHours(23)
-    end.setMinutes(59)
-    end.setSeconds(59)
-
-    const getAllOrders = await Order.find({createdAt: {$gt: start.toISOString(), $lt: end.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
-    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: start.toISOString(), $lt: end.toISOString()}})
+    const getAllOrders = await Order.find({createdAt: {$gt: fromDateISO, $lt: toDateISO}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
+    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: fromDateISO, $lt: toDateISO}})
     const allStaff = await User.aggregate([{$project: {_id: 1, username: 1, firstName: 1, lastName: 1}}])
 
-    return res.json({allStaff, orders: extractData(getAllOrders), reservations: extractData(getAllReservations)})
+    const groupedOrders = group_by(getAllOrders, 'createdBy')
+    const groupedReservations = group_by(getAllReservations, 'createdBy')
+    const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+        const items = groupedOrders[key].map(order => {
+            return order.items.map(item => {
+                return {
+                    name: item.item.name,
+                    price: item.item.price,
+                    totalSale: item.item.price * item.qty,
+                    qty: item.qty
+                }
+            })
+        }).flat()
+        return {
+            host: staff.username,
+            items,
+            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
+        }
+    }
+    )
+    const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+
+        const items = groupedReservations[key].map(order => {
+            return order.items.map(item => {
+                return {
+                    name: item.item.name,
+                    price: item.item.price,
+                    totalSale: item.item.price * item.qty,
+                    qty: item.qty
+                }
+            })
+        }).flat()
+        return {
+            host: staff.username,
+            items,
+            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
+        }
+    }
+    )
+    
+    return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
 }
 
 module.exports.get_summary_today = async(req, res) => {
-    const D = new Date().toLocaleString('en-US', {
-        timeZone: 'Africa/Lagos'
-        })
-
+    const D = new Date().toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
     const today = new Date(D)
-    today.setHours(0)
-    today.setMinutes(0)
-    today.setSeconds(0)
+    today.setHours(0, 0, 0, 0)
+    const todayISO = today.toISOString()
 
     const allStaff = await User.aggregate([{$project: {_id: 1, username: 1, firstName: 1, lastName: 1}}])
-    const getAllOrders = await Order.find({createdAt: {$gt: today.toISOString()}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
-    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: today.toISOString()}})
+    const getAllOrders = await Order.find({createdAt: {$gt: todayISO}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}],  revoked: false})
+    const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: todayISO}})
+    
+    const groupedOrders = group_by(getAllOrders, 'createdBy')
+    const groupedReservations = group_by(getAllReservations, 'createdBy')
+    const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+        const items = groupedOrders[key].map(order => {
+            return order.items.map(item => {
+                return {
+                    name: item.item.name,
+                    price: item.item.price,
+                    totalSale: item.item.price * item.qty,
+                    qty: item.qty
+                }
+            })
+        }).flat()
+        return {
+            host: staff.username,
+            items,
+            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
+        }
+    }
+    )
+    const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
 
-    return res.json({allStaff, orders: extractData(getAllOrders), reservations: extractData(getAllReservations)})
+        const items = groupedReservations[key].map(order => {
+            return order.items.map(item => {
+                return {
+                    name: item.item.name,
+                    price: item.item.price,
+                    totalSale: item.item.price * item.qty,
+                    qty: item.qty
+                }
+            })
+        }).flat()
+        return {
+            host: staff.username,
+            items,
+            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
+        }
+    }
+    )
+    
+    return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
 }
 
 
