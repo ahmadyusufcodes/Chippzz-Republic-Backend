@@ -282,7 +282,7 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const groupedOrders = group_by(getAllOrders, 'createdBy')
     const groupedReservations = group_by(getAllReservations, 'createdBy')
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
         const items = groupedOrders[key].map(order => {
             return order.items.map(item => {
                 return {
