@@ -294,15 +294,13 @@ module.exports.get_summary_date_to_date = async(req, res) => {
             })
         }).flat()
         return {
-            host: staff.username,
+            host: staff,
             items,
             totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
         }
-    }
-    )
+    })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
-
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
         const items = groupedReservations[key].map(order => {
             return order.items.map(item => {
                 return {
@@ -314,13 +312,11 @@ module.exports.get_summary_date_to_date = async(req, res) => {
             })
         }).flat()
         return {
-            host: staff.username,
+            host: staff,
             items,
             totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
         }
-    }
-    )
-    
+    })
     return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
 }
 
@@ -337,7 +333,7 @@ module.exports.get_summary_today = async(req, res) => {
     const groupedOrders = group_by(getAllOrders, 'createdBy')
     const groupedReservations = group_by(getAllReservations, 'createdBy')
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
         const items = groupedOrders[key].map(order => {
             return order.items.map(item => {
                 return {
@@ -349,12 +345,11 @@ module.exports.get_summary_today = async(req, res) => {
             })
         }).flat()
         return {
-            host: staff.username,
+            host: staff,
             items,
             totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
         }
-    }
-    )
+    })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
         const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
 
@@ -369,13 +364,11 @@ module.exports.get_summary_today = async(req, res) => {
             })
         }).flat()
         return {
-            host: staff.username,
+            host: staff,
             items,
             totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
         }
-    }
-    )
-    
+    })
     return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
 }
 
