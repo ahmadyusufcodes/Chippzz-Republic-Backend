@@ -351,7 +351,7 @@ module.exports.get_summary_today = async(req, res) => {
         }
     })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff"}
+        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
 
         const items = groupedReservations[key].map(order => {
             return order.items.map(item => {
