@@ -272,11 +272,16 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const fromDate = new Date(startDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
     const toDate = new Date(endDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
 
-    fromDate.setHours(0,0,0,0)
-    toDate.setHours(23,59,59,999)
+    
+    const fromDateDate = new Date(fromDate)
+    const toDateDate = new Date(toDate)
 
-    const fromDateISO = new Date(fromDate).toISOString()
-    const toDateISO = new Date(toDate).toISOString()
+    fromDateDate.setHours(0,0,0,0)
+    toDateDate.setHours(23,59,59,999)
+
+    const fromDateISO = fromDateDate.toISOString()
+    const toDateISO = toDateDate.toISOString()
+    
 
     const getAllOrders = await Order.find({createdAt: {$gt: fromDateISO, $lt: toDateISO}, $or: [{orderType: "Instant-Order"}, {orderType: "Shipment"}], revoked: false})
     const getAllReservations = await Order.find({orderType: "Reservation", reservationFulfilled: true, reservationFulfilledOn: {$gt: fromDateISO, $lt: toDateISO}})
