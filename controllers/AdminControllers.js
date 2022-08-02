@@ -281,43 +281,44 @@ module.exports.get_summary_date_to_date = async(req, res) => {
 
     const groupedOrders = group_by(getAllOrders, 'createdBy')
     const groupedReservations = group_by(getAllReservations, 'createdBy')
+    
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
-        const items = groupedOrders[key].map(order => {
-            return order.items.map(item => {
-                return {
-                    name: item.item.name,
-                    price: item.item.price,
-                    totalSale: item.item.price * item.qty,
-                    qty: item.qty
-                }
-            })
-        }).flat()
-        return {
-            host: staff,
-            items,
-            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
-        }
+        const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
+        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price, totalSale: item.qty * item.item.price, discount: order.discount, discountedPrice: item.item.price - (item.item.price * ((item.item.discount / 100) || 0))})))
+        return {host: host, items: items.flat()}
     })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
-        const items = groupedReservations[key].map(order => {
-            return order.items.map(item => {
-                return {
-                    name: item.item.name,
-                    price: item.item.price,
-                    totalSale: item.item.price * item.qty,
-                    qty: item.qty
-                }
-            })
-        }).flat()
-        return {
-            host: staff,
-            items,
-            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
-        }
+        const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
+        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price, totalSale: item.qty * item.item.price, discount: order.discount, discountedPrice: item.item.price - (item.item.price * ((item.item.discount / 100) || 0))})))
+        return {host: host, items: items.flat()}
+    }) 
+    const groupedOrdersArrayWithDuplicates = groupedOrdersArray.map(host => {
+        const items = host.items.reduce((acc, item) => {
+            const existingItem = acc.find(i => i.name === item.name)
+            if (existingItem) {
+                existingItem.qtySold += item.qtySold
+                existingItem.totalSale += item.totalSale
+            } else {
+                acc.push(item)
+            }
+            return acc
+        }, [])
+        return {host: host.host, items: items, totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)}
     })
-    return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
+    const groupedReservationsArrayWithDuplicates = groupedReservationsArray.map(host => {
+        const items = host.items.reduce((acc, item) => {
+            const existingItem = acc.find(i => i.name === item.name)
+            if (existingItem) {
+                existingItem.qtySold += item.qtySold
+                existingItem.totalSale += item.totalSale
+            } else {
+                acc.push(item)
+            }
+            return acc
+        }, [])
+        return {host: host.host, items: items, totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)}
+    })
+    return res.json({orders: groupedOrdersArrayWithDuplicates, reservations: groupedReservationsArrayWithDuplicates})
 }
 
 module.exports.get_summary_today = async(req, res) => {
@@ -333,46 +334,43 @@ module.exports.get_summary_today = async(req, res) => {
     const groupedOrders = group_by(getAllOrders, 'createdBy')
     const groupedReservations = group_by(getAllReservations, 'createdBy')
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
-        const items = groupedOrders[key].map(order => {
-            return order.items.map(item => {
-                return {
-                    name: item.item.name,
-                    price: item.item.price,
-                    totalSale: item.item.price * item.qty,
-                    qty: item.qty
-                }
-            })
-        }).flat()
-        return {
-            host: staff,
-            items,
-            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
-        }
+        const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
+        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price, totalSale: item.qty * item.item.price, discount: order.discount, discountedPrice: item.item.price - (item.item.price * ((item.item.discount / 100) || 0))})))
+        return {host: host, items: items.flat()}
     })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
-        const staff = allStaff.find(staff => staff._id.toString() === key) || {username: "Old Staff", firstName: "Uknown", lastName: "Uknown"}
-
-        const items = groupedReservations[key].map(order => {
-            return order.items.map(item => {
-                return {
-                    name: item.item.name,
-                    price: item.item.price,
-                    totalSale: item.item.price * item.qty,
-                    qty: item.qty
-                }
-            })
-        }).flat()
-        return {
-            host: staff,
-            items,
-            totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)
-        }
+        const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
+        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price, totalSale: item.qty * item.item.price, discount: order.discount, discountedPrice: item.item.price - (item.item.price * ((item.item.discount / 100) || 0))})))
+        return {host: host, items: items.flat()}
+    }) 
+    const groupedOrdersArrayWithDuplicates = groupedOrdersArray.map(host => {
+        const items = host.items.reduce((acc, item) => {
+            const existingItem = acc.find(i => i.name === item.name)
+            if (existingItem) {
+                existingItem.qtySold += item.qtySold
+                existingItem.totalSale += item.totalSale
+            } else {
+                acc.push(item)
+            }
+            return acc
+        }, [])
+        return {host: host.host, items: items, totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)}
     })
-    return res.json({orders: groupedOrdersArray, reservations: groupedReservationsArray})
+    const groupedReservationsArrayWithDuplicates = groupedReservationsArray.map(host => {
+        const items = host.items.reduce((acc, item) => {
+            const existingItem = acc.find(i => i.name === item.name)
+            if (existingItem) {
+                existingItem.qtySold += item.qtySold
+                existingItem.totalSale += item.totalSale
+            } else {
+                acc.push(item)
+            }
+            return acc
+        }, [])
+        return {host: host.host, items: items, totalSale: items.reduce((acc, item) => acc + item.totalSale, 0)}
+    })
+    return res.json({orders: groupedOrdersArrayWithDuplicates, reservations: groupedReservationsArrayWithDuplicates})
 }
-
-
 
 module.exports.create_discount = async(req, res) => {
     if(!req.body) return res.json({msg: "Please include required info as JSON"})
