@@ -272,6 +272,9 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     const fromDate = new Date(startDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
     const toDate = new Date(endDate).toLocaleString('en-US', {timeZone: 'Africa/Lagos'})
 
+    fromDate.setHours(0,0,0,0)
+    toDate.setHours(23,59,59,999)
+
     const fromDateISO = new Date(fromDate).toISOString()
     const toDateISO = new Date(toDate).toISOString()
 
