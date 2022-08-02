@@ -284,12 +284,12 @@ module.exports.get_summary_date_to_date = async(req, res) => {
     
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
         const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
-        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0))), discount: order.discount})))
+        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0)))})))
         return {host: host, items: items.flat()}
     })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
         const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
-        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0))), discount: order.discount})))
+        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0)))})))
         return {host: host, items: items.flat()}
     }) 
     const groupedOrdersArrayWithDuplicates = groupedOrdersArray.map(host => {
@@ -335,12 +335,12 @@ module.exports.get_summary_today = async(req, res) => {
     const groupedReservations = group_by(getAllReservations, 'createdBy')
     const groupedOrdersArray = Object.keys(groupedOrders).map(key => {
         const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
-        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0))), discount: order.discount})))
+        const items = groupedOrders[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0)))})))
         return {host: host, items: items.flat()}
     })
     const groupedReservationsArray = Object.keys(groupedReservations).map(key => {
         const host = allStaff.find(staff => staff._id.toString() === key) || {firstName: "Unknown", lastName: "Unknown", username: "Unknown"}
-        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0))), discount: order.discount})))
+        const items = groupedReservations[key].map(order => order.items.map(item => ({name: item.item.name, qtySold: item.qty, price: item.item.price - (item.item.price * ((item.item.discount / 100) || 0)), totalSale: item.qty * (item.item.price - (item.item.price * ((item.item.discount / 100) || 0)))})))
         return {host: host, items: items.flat()}
     }) 
     const groupedOrdersArrayWithDuplicates = groupedOrdersArray.map(host => {
