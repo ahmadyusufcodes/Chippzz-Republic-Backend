@@ -106,7 +106,7 @@ module.exports.search_products = async(req, res) => {
 module.exports.get_all_orders = async(req, res) => {
     const {nextPage} = req.body
     try {
-        const allOrders = await Order.find({orderType: "Instant-Order" || "Shipment"}).sort("-receiptNo").skip(10 * nextPage).limit(10)
+        const allOrders = await Order.find({$or: [{orderType: "Shipment"}, {orderType: "Instant-Order"}]}).sort("-receiptNo").limit(10).skip(10 * nextPage)
         return res.json({orders: allOrders, pagesCount: Math.floor(await Order.countDocuments() / 10), nextPage: nextPage || 1, prevPage: nextPage > 0 ? nextPage - 1 : 0 })
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
