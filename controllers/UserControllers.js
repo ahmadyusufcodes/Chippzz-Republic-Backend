@@ -54,10 +54,9 @@ module.exports.get_product_by_category = async(req, res) => {
 
 module.exports.get_all_product_by_category = async(req, res) => {
     try {
-        const getAllProducts = await Product.find()
+        const getAllProducts = await Product.find().sort({name: 1})
         if(!getAllProducts) return res.status(404).json([])
         const result = getAllProducts.reduce((h, obj) => Object.assign(h, { [obj.category]:( h[obj.category] || [] ).concat(obj) }), {})
-        // console.log(result["Drinks"])
         return res.json(result)
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
@@ -86,7 +85,7 @@ module.exports.get_staff = async(req, res) => {
 
 module.exports.get_all_products = async(req, res) => {
     try {
-        const allProduct = await Product.find()
+        const allProduct = await Product.find().sort({name: 1})
         return res.json({products: allProduct})
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
@@ -106,7 +105,7 @@ module.exports.search_products = async(req, res) => {
 module.exports.get_all_orders = async(req, res) => {
     const {nextPage} = req.body
     try {
-        const allOrders = await Order.find({$or: [{orderType: "Shipment"}, {orderType: "Instant-Order"}]}).sort("-receiptNo").limit(10).skip(10 * nextPage)
+        const allOrders = await Order.find({$or: [{orderType: "Shipment"}, {orderType: "Instant-Order"}]}).sort({receiptNo: -1}).limit(10).skip(10 * nextPage)
         return res.json({orders: allOrders, pagesCount: Math.floor(await Order.countDocuments() / 10), nextPage: nextPage || 1, prevPage: nextPage > 0 ? nextPage - 1 : 0 })
     } catch (error) {
         return res.status(500).json({error: "Internal server error"})
